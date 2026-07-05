@@ -174,8 +174,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const realAudioMB = Math.round((totalAudioBytes / (1024 * 1024)) * 10) / 10;
 
       if (Capacitor.isNativePlatform()) {
-        const { DeviceStorage } = await import('../lib/deviceStorage');
-        const info = await DeviceStorage.getStorageInfo();
+        const { getStorage } = await import('../lib/deviceStorage');
+        const info = await getStorage();
         quotaGB = Math.round((info.total / (1024 * 1024 * 1024)) * 10) / 10;
         usageGB = Math.round((info.used / (1024 * 1024 * 1024)) * 100) / 100;
         freeGB = Math.max(0, Math.round((info.free / (1024 * 1024 * 1024)) * 10) / 10);

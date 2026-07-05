@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Header } from '../components/Header';
 import { Song } from '../types';
 import { Capacitor } from '@capacitor/core';
-import { AudioScanner } from '../lib/audioScanner';
+import { AudioScanner, getSongs } from '../lib/audioScanner';
 
 export const ImportScreen: React.FC = () => {
   const { songs, importSongs, setScreen, showToast } = useApp();
@@ -50,38 +50,45 @@ export const ImportScreen: React.FC = () => {
       setIsExtracting(true);
       showToast('Escaneando armazenamento interno...');
 
-      const result = await AudioScanner.scanAudioFiles();
-      const files = result.files;
+      const songsResult = await getSongs();
+      const rawSongs = songsResult || [];
 
-      if (!files || files.length === 0) {
+      if (!rawSongs || rawSongs.length === 0) {
         showToast('Nenhuma música encontrada no dispositivo.');
         setIsExtracting(false);
         return;
       }
 
-      const newSongs: Song[] = files.map((file, i) => {
-        const ext = file.uri.split('.').pop()?.toUpperCase() || 'MP3';
-        const m = Math.floor(file.duration / 1000 / 60);
-        const s = Math.floor((file.duration / 1000) % 60);
+      const newSongs: Song[] = rawSongs.map((file: any, i: number) => {
+        const title = file.name || file.title || 'Música Sem Título';
+        const artist = file.artist || 'Artista Desconhecido';
+        const album = file.album || 'Álbum Desconhecido';
+        const durationMs = file.duration || 180000;
+        const path = file.path || file.uri || '';
+        const ext = path.split('.').pop()?.toUpperCase() || 'MP3';
+        
+        const durationSec = Math.round(durationMs > 1000 ? durationMs / 1000 : durationMs);
+        const m = Math.floor(durationSec / 60);
+        const s = Math.floor(durationSec % 60);
 
         return {
-          id: `native_${file.id}`,
-          title: file.title,
-          artist: file.artist,
-          album: file.album,
-          duration: Math.round(file.duration / 1000),
+          id: `native_${i}_${Date.now()}`,
+          title,
+          artist,
+          album,
+          duration: durationSec,
           durationFormatted: `${m}:${s < 10 ? '0' : ''}${s}`,
           coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80',
-          audioUrl: file.webPath || file.uri,
+          audioUrl: file.webPath || path,
           format: ext as any,
           genre: 'Local',
           isFavorite: false,
           isDownloaded: true,
           isUploaded: false,
-          fileSizeBytes: file.size,
-          fileSizeFormatted: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-          year: new Date(file.dateModified * 1000).getFullYear() || new Date().getFullYear(),
-          folderPath: file.uri,
+          fileSizeBytes: file.size || 0,
+          fileSizeFormatted: `${((file.size || 0) / (1024 * 1024)).toFixed(1)} MB`,
+          year: new Date().getFullYear(),
+          folderPath: path,
         };
       });
 
