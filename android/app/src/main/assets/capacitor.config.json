@@ -1,0 +1,5 @@
+{
+	"appId": "com.cloudmusic.app",
+	"appName": "CloudMusic",
+	"webDir": "dist"
+}
